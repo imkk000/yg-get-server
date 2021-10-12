@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -40,19 +41,27 @@ func (s ServerList) Swap(i, j int) {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		fmt.Println(msg, err)
+		fmt.Printf("%s: %s\n", msg, err)
 		os.Exit(1)
 	}
 }
 
+//go:embed .env
+var envStr string
+
 func main() {
-	err := godotenv.Load()
-	failOnError(err, "Load Env File")
+	var envMap map[string]string
+	var err error
+	envMap, err = godotenv.Read()
+	if err != nil {
+		envMap, err = godotenv.Unmarshal(envStr)
+		failOnError(err, "Load Env From Embedded File")
+	}
 
 	c := http.Client{
 		Timeout: 30 * time.Second,
 	}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(urlFormat, os.Getenv("HOST")), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(urlFormat, envMap["HOST"]), nil)
 	failOnError(err, "Create Request")
 
 	resp, err := c.Do(req)
