@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -48,8 +49,14 @@ func main() {
 	err := godotenv.Load()
 	failOnError(err, "Load Env File")
 
-	resp, err := http.Get(fmt.Sprintf(urlFormat, os.Getenv("HOST")))
-	failOnError(err, "Call Api")
+	c := http.Client{
+		Timeout: 30 * time.Second,
+	}
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(urlFormat, os.Getenv("HOST")), nil)
+	failOnError(err, "Create Request")
+
+	resp, err := c.Do(req)
+	failOnError(err, "Call Api with Request")
 
 	data, err := ioutil.ReadAll(resp.Body)
 	failOnError(err, "Get Body")
